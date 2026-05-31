@@ -214,9 +214,11 @@ private fun BossSelectField(
                     text = {
                         Column {
                             Text(boss.name, style = MaterialTheme.typography.bodyLarge)
-                            if (boss.reading != boss.name) {
+                            // 読みが複数（;区切り）でも表示は先頭のみ
+                            val displayReading = boss.reading.substringBefore(";").trim()
+                            if (displayReading != boss.name) {
                                 Text(
-                                    boss.reading,
+                                    displayReading,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )

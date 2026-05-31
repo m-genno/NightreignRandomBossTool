@@ -149,10 +149,12 @@ function setupCombo(comboEl, getChoices, onSelect, onClearSelection) {
             const li = document.createElement("li");
             li.dataset.name = boss.name;
             li.dataset.index = String(i);
-            const showReading = boss.reading && boss.reading !== boss.name;
+            // 読みが複数（;区切り）でも表示は先頭のみ
+            const displayReading = boss.reading.split(";")[0].trim();
+            const showReading = displayReading && displayReading !== boss.name;
             li.innerHTML =
                 escapeHtml(boss.name) +
-                (showReading ? `<span class="reading">${escapeHtml(boss.reading)}</span>` : "");
+                (showReading ? `<span class="reading">${escapeHtml(displayReading)}</span>` : "");
             list.appendChild(li);
         });
         list.hidden = false;
