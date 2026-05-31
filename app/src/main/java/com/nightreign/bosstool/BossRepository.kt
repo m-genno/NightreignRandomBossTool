@@ -1,7 +1,6 @@
 package com.nightreign.bosstool
 
 import android.content.Context
-import com.nightreign.bosstool.Nightlord.Companion.WILDCARD
 import java.io.File
 
 /**
@@ -91,20 +90,36 @@ object BossRepository {
             val name = parts.getOrNull(0)?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
             Nightlord(
                 name = name,
-                night1 = parts.getOrNull(1).parseBossSet(),
-                night2 = parts.getOrNull(2).parseBossSet(),
+                night1 = parts.getOrNull(1).parseNightSpec(),
+                night2 = parts.getOrNull(2).parseNightSpec(),
             )
         }
 
-    /** "鈴玉狩り;夜の騎兵" → 集合。"*"や"全種類"はワイルドカードにする。 */
-    private fun String?.parseBossSet(): Set<String> {
+    /**
+     * 夜ボスの指定をパースする。
+     *  - "鈴玉狩り;夜の騎兵"       → そのボスだけ
+     *  - "*" / "全種類"            → 全種類（ワイルドカード）
+     *  - "*;-鈴玉狩り"             → 全種類だが「鈴玉狩り」は除外（"-"または"－"始まり）
+     */
+    private fun String?.parseNightSpec(): NightSpec {
         val s = this?.trim().orEmpty()
-        if (s.isEmpty()) return emptySet()
-        if (s == "*" || s == "全" || s == "全種類") return setOf(WILDCARD)
-        return s.split(";", "、", "/")
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .toSet()
+        if (s.isEmpty()) return NightSpec.EMPTY
+        var wildcard = false
+        val include = LinkedHashSet<String>()
+        val exclude = LinkedHashSet<String>()
+        for (token in s.split(";", "、", "/")) {
+            val t = token.trim()
+            when {
+                t.isEmpty() -> {}
+                t == "*" || t == "全" || t == "全種類" -> wildcard = true
+                t.startsWith("-") || t.startsWith("－") -> {
+                    val name = t.drop(1).trim()
+                    if (name.isNotEmpty()) exclude += name
+                }
+                else -> include += t
+            }
+        }
+        return NightSpec(wildcard, include, exclude)
     }
 
     private fun boss(name: String) = Boss(name, readings[name] ?: name)
@@ -115,11 +130,9 @@ object BossRepository {
     /** 2日目に選べる夜ボス一覧（読み順）。 */
     fun night2Choices(): List<Boss> = choicesFrom { it.night2 }
 
-    private fun choicesFrom(select: (Nightlord) -> Set<String>): List<Boss> {
+    private fun choicesFrom(select: (Nightlord) -> NightSpec): List<Boss> {
         val names = LinkedHashSet<String>()
-        for (lord in nightlords) {
-            for (b in select(lord)) if (b != WILDCARD) names += b
-        }
+        for (lord in nightlords) names += select(lord).include
         return names.map { boss(it) }.sortedBy { it.reading }
     }
 

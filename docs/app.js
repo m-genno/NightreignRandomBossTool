@@ -1,8 +1,6 @@
 "use strict";
 
 // ====== データモデル（Android版と同じ仕様） ======
-const WILDCARD = "*";
-
 const state = {
     readings: new Map(), // 夜ボス名 -> よみがな
     nightlords: [],      // { name, night1:Set, night2:Set }
@@ -57,13 +55,27 @@ function parseReadings(text) {
     return map;
 }
 
-function parseBossSet(s) {
+// 夜ボスの指定をパース:
+//   "鈴玉狩り;夜の騎兵"  → そのボスだけ
+//   "*" / "全種類"       → 全種類（wildcard）
+//   "*;-鈴玉狩り"        → 全種類だが「鈴玉狩り」は除外（"-"または"－"始まり）
+function parseNightSpec(s) {
     const t = (s || "").trim();
-    if (t === "") return new Set();
-    if (t === "*" || t === "全" || t === "全種類") return new Set([WILDCARD]);
-    return new Set(
-        t.split(/[;；、/]/).map((x) => x.trim()).filter((x) => x !== "")
-    );
+    const spec = { wildcard: false, include: new Set(), exclude: new Set() };
+    if (t === "") return spec;
+    for (const tokenRaw of t.split(/[;；、/]/)) {
+        const tok = tokenRaw.trim();
+        if (tok === "") continue;
+        if (tok === "*" || tok === "全" || tok === "全種類") {
+            spec.wildcard = true;
+        } else if (tok.startsWith("-") || tok.startsWith("－")) {
+            const name = tok.slice(1).trim();
+            if (name) spec.exclude.add(name);
+        } else {
+            spec.include.add(tok);
+        }
+    }
+    return spec;
 }
 
 function parseNightlords(text) {
@@ -74,8 +86,8 @@ function parseNightlords(text) {
         if (!name) continue;
         list.push({
             name,
-            night1: parseBossSet(parts[1]),
-            night2: parseBossSet(parts[2]),
+            night1: parseNightSpec(parts[1]),
+            night2: parseNightSpec(parts[2]),
         });
     }
     return list;
@@ -89,15 +101,15 @@ function bossOf(name) {
 function choicesFrom(selector) {
     const names = new Set();
     for (const lord of state.nightlords) {
-        for (const b of selector(lord)) if (b !== WILDCARD) names.add(b);
+        for (const b of selector(lord).include) names.add(b);
     }
     return [...names]
         .map(bossOf)
         .sort((a, b) => a.reading.localeCompare(b.reading, "ja"));
 }
 
-function matchesNight(set, boss) {
-    return set.has(WILDCARD) || set.has(boss);
+function matchesNight(spec, boss) {
+    return spec.wildcard ? !spec.exclude.has(boss) : spec.include.has(boss);
 }
 
 function candidates() {

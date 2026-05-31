@@ -4,22 +4,35 @@ package com.nightreign.bosstool
 data class Boss(val name: String, val reading: String)
 
 /**
- * 3日目のボス（夜の王）と、その王のときに出現する夜ボスの集合。
+ * ある夜（1夜 or 2夜）に出現する夜ボスの指定。
+ *  - wildcard=true なら「全種類」。ただし exclude のボスは除く。
+ *  - wildcard=false なら include に含まれるボスだけ。
+ */
+data class NightSpec(
+    val wildcard: Boolean,
+    val include: Set<String>,
+    val exclude: Set<String>,
+) {
+    fun matches(boss: String): Boolean =
+        if (wildcard) boss !in exclude else boss in include
+
+    companion object {
+        val EMPTY = NightSpec(false, emptySet(), emptySet())
+    }
+}
+
+/**
+ * 3日目のボス（夜の王）と、その王のときに出現する夜ボスの指定。
  *  - night1: 1日目（1夜）に出る夜ボス
  *  - night2: 2日目（2夜）に出る夜ボス
- * 集合に [WILDCARD] が含まれる場合は「全種類」を意味し、どの夜ボスにもマッチする。
  */
 data class Nightlord(
     val name: String,
-    val night1: Set<String>,
-    val night2: Set<String>,
+    val night1: NightSpec,
+    val night2: NightSpec,
 ) {
-    fun matchesNight1(boss: String): Boolean = WILDCARD in night1 || boss in night1
-    fun matchesNight2(boss: String): Boolean = WILDCARD in night2 || boss in night2
-
-    companion object {
-        const val WILDCARD = "*"
-    }
+    fun matchesNight1(boss: String): Boolean = night1.matches(boss)
+    fun matchesNight2(boss: String): Boolean = night2.matches(boss)
 }
 
 /**
