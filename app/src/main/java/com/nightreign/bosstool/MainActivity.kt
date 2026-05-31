@@ -64,7 +64,8 @@ fun MainScreen() {
 
     // データを再読み込みするたびに increment し、依存する remember を更新する
     var dataVersion by remember { mutableIntStateOf(0) }
-    val nightBosses = remember(dataVersion) { BossRepository.nightBossChoices() }
+    val night1Bosses = remember(dataVersion) { BossRepository.night1Choices() }
+    val night2Bosses = remember(dataVersion) { BossRepository.night2Choices() }
 
     var day1Text by remember { mutableStateOf("") }
     var day1Selected by remember { mutableStateOf<String?>(null) }
@@ -129,7 +130,7 @@ fun MainScreen() {
 
             BossSelectField(
                 label = "1日目の夜ボス",
-                allBosses = nightBosses,
+                allBosses = night1Bosses,
                 text = day1Text,
                 onTextChange = { day1Text = it; day1Selected = null },
                 onPick = { day1Text = it.name; day1Selected = it.name },
@@ -137,7 +138,7 @@ fun MainScreen() {
 
             BossSelectField(
                 label = "2日目の夜ボス",
-                allBosses = nightBosses,
+                allBosses = night2Bosses,
                 text = day2Text,
                 onTextChange = { day2Text = it; day2Selected = null },
                 onPick = { day2Text = it.name; day2Selected = it.name },
@@ -254,7 +255,7 @@ private fun ResultSection(
 
         candidates.isEmpty() -> {
             Text(
-                "該当する候補が見つかりませんでした。データ（boss_table.txt）を確認してください。",
+                "該当する候補が見つかりませんでした。データ（nightlords.txt）を確認してください。",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
             )

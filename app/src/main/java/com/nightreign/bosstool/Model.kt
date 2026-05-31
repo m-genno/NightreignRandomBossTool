@@ -4,6 +4,25 @@ package com.nightreign.bosstool
 data class Boss(val name: String, val reading: String)
 
 /**
+ * 3日目のボス（夜の王）と、その王のときに出現する夜ボスの集合。
+ *  - night1: 1日目（1夜）に出る夜ボス
+ *  - night2: 2日目（2夜）に出る夜ボス
+ * 集合に [WILDCARD] が含まれる場合は「全種類」を意味し、どの夜ボスにもマッチする。
+ */
+data class Nightlord(
+    val name: String,
+    val night1: Set<String>,
+    val night2: Set<String>,
+) {
+    fun matchesNight1(boss: String): Boolean = WILDCARD in night1 || boss in night1
+    fun matchesNight2(boss: String): Boolean = WILDCARD in night2 || boss in night2
+
+    companion object {
+        const val WILDCARD = "*"
+    }
+}
+
+/**
  * 検索用に文字列を正規化する。
  *  - カタカナ → ひらがな（「ス」と「す」を同じ扱いにする）
  *  - 英字は小文字化

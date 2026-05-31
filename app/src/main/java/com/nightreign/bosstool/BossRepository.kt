@@ -1,15 +1,17 @@
 package com.nightreign.bosstool
 
 import android.content.Context
+import com.nightreign.bosstool.Nightlord.Companion.WILDCARD
 import java.io.File
 
 /**
  * ボスデータを外部テキストファイルから読み込むリポジトリ。
  *
  * データの考え方:
- *   「ある夜ボスが出たら、3日目の夜の王はこの候補のどれか」という対応表を1つ持つ。
- *   1日目でも2日目でも、見えた夜ボスから同じ表で候補を引ける。
- *   1日目・2日目の両方が分かれば、両方の候補の積集合になり絞り込める（精度UP）。
+ *   夜の王ごとに「1夜（1日目）に出る夜ボス」「2夜（2日目）に出る夜ボス」を持つ。
+ *   1日目の夜ボスを選ぶ → それを1夜に持つ夜の王が候補になる
+ *   2日目の夜ボスを選ぶ → それを2夜に持つ夜の王が候補になる
+ *   両方を選ぶ           → 両方を満たす夜の王だけに絞り込まれる（積集合・精度UP）
  *
  * ファイルは初回起動時に assets から
  *   端末の「Android/data/com.nightreign.bosstool/files/」配下にコピーされる。
@@ -17,17 +19,14 @@ import java.io.File
  * 反映できる（再ビルド不要）。
  */
 object BossRepository {
-    private const val BOSSES_FILE = "bosses.txt"     // 夜ボスの読み（検索用辞書）
-    private const val TABLE_FILE = "boss_table.txt"  // 夜ボス → 夜の王候補 の対応表
+    private const val BOSSES_FILE = "bosses.txt"        // 夜ボスの読み（検索用辞書）
+    private const val NIGHTLORDS_FILE = "nightlords.txt" // 夜の王ごとの 1夜/2夜 ボス
 
     /** 夜ボス名 → よみがな */
     private var readings: Map<String, String> = emptyMap()
 
-    /** 夜ボス名 → 候補の夜の王リスト（登場順を保持） */
-    private var table: LinkedHashMap<String, List<String>> = LinkedHashMap()
-
-    /** 夜の王の表示順（対応表での初出順） */
-    private var lordOrder: List<String> = emptyList()
+    /** 夜の王の一覧（ファイル記載順 = 表示順） */
+    private var nightlords: List<Nightlord> = emptyList()
 
     private fun dataDir(context: Context): File =
         context.getExternalFilesDir(null) ?: context.filesDir
@@ -37,7 +36,7 @@ object BossRepository {
         val dir = dataDir(context)
         if (!dir.exists()) dir.mkdirs()
         copyIfMissing(context, dir, BOSSES_FILE)
-        copyIfMissing(context, dir, TABLE_FILE)
+        copyIfMissing(context, dir, NIGHTLORDS_FILE)
         reload(context)
     }
 
@@ -45,7 +44,7 @@ object BossRepository {
     fun restoreDefaults(context: Context) {
         val dir = dataDir(context)
         copyFromAssets(context, dir, BOSSES_FILE)
-        copyFromAssets(context, dir, TABLE_FILE)
+        copyFromAssets(context, dir, NIGHTLORDS_FILE)
         reload(context)
     }
 
@@ -53,8 +52,7 @@ object BossRepository {
     fun reload(context: Context) {
         val dir = dataDir(context)
         readings = parseReadings(readOrEmpty(File(dir, BOSSES_FILE)))
-        table = parseTable(readOrEmpty(File(dir, TABLE_FILE)))
-        lordOrder = table.values.flatten().distinct()
+        nightlords = parseNightlords(readOrEmpty(File(dir, NIGHTLORDS_FILE)))
     }
 
     /** 編集すべきファイルの場所（説明表示用）。 */
@@ -87,43 +85,54 @@ object BossRepository {
             name to reading
         }.toMap()
 
-    private fun parseTable(text: String): LinkedHashMap<String, List<String>> {
-        val map = LinkedHashMap<String, List<String>>()
-        for (line in cleanLines(text)) {
+    private fun parseNightlords(text: String): List<Nightlord> =
+        cleanLines(text).mapNotNull { line ->
             val parts = line.split("|").map { it.trim() }
-            val boss = parts.getOrNull(0)?.takeIf { it.isNotEmpty() } ?: continue
-            val lords = parts.getOrNull(1)
-                ?.split(";", "、", "/")
-                ?.map { it.trim() }
-                ?.filter { it.isNotEmpty() }
-                ?: emptyList()
-            map[boss] = lords
+            val name = parts.getOrNull(0)?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+            Nightlord(
+                name = name,
+                night1 = parts.getOrNull(1).parseBossSet(),
+                night2 = parts.getOrNull(2).parseBossSet(),
+            )
         }
-        return map
+
+    /** "鈴玉狩り;夜の騎兵" → 集合。"*"や"全種類"はワイルドカードにする。 */
+    private fun String?.parseBossSet(): Set<String> {
+        val s = this?.trim().orEmpty()
+        if (s.isEmpty()) return emptySet()
+        if (s == "*" || s == "全" || s == "全種類") return setOf(WILDCARD)
+        return s.split(";", "、", "/")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .toSet()
     }
 
-    /** 夜ボスの選択候補（1日目・2日目で選べるボス一覧）。対応表のキーから生成。 */
-    fun nightBossChoices(): List<Boss> =
-        table.keys.map { Boss(it, readings[it] ?: it) }
+    private fun boss(name: String) = Boss(name, readings[name] ?: name)
+
+    /** 1日目に選べる夜ボス一覧（読み順）。 */
+    fun night1Choices(): List<Boss> = choicesFrom { it.night1 }
+
+    /** 2日目に選べる夜ボス一覧（読み順）。 */
+    fun night2Choices(): List<Boss> = choicesFrom { it.night2 }
+
+    private fun choicesFrom(select: (Nightlord) -> Set<String>): List<Boss> {
+        val names = LinkedHashSet<String>()
+        for (lord in nightlords) {
+            for (b in select(lord)) if (b != WILDCARD) names += b
+        }
+        return names.map { boss(it) }.sortedBy { it.reading }
+    }
 
     /**
      * 入力された夜ボスから3日目のボス候補を返す。
-     *  - 1日目だけ／2日目だけ → その夜ボスの候補
-     *  - 両方            → 両方の候補の積集合（絞り込み）
+     *  - 1日目だけ／2日目だけ → その条件を満たす夜の王
+     *  - 両方            → 両方を満たす夜の王（絞り込み）
      */
     fun candidates(night1: String?, night2: String?): List<String> {
-        val sets = ArrayList<List<String>>()
-        if (!night1.isNullOrEmpty()) sets += (table[night1] ?: emptyList())
-        if (!night2.isNullOrEmpty()) sets += (table[night2] ?: emptyList())
-        if (sets.isEmpty()) return emptyList()
-
-        var result = sets[0]
-        for (i in 1 until sets.size) {
-            val s = sets[i].toHashSet()
-            result = result.filter { it in s }
-        }
-
-        val orderIndex = lordOrder.withIndex().associate { (i, v) -> v to i }
-        return result.distinct().sortedBy { orderIndex[it] ?: Int.MAX_VALUE }
+        if (night1.isNullOrEmpty() && night2.isNullOrEmpty()) return emptyList()
+        return nightlords.filter { lord ->
+            (night1.isNullOrEmpty() || lord.matchesNight1(night1)) &&
+                (night2.isNullOrEmpty() || lord.matchesNight2(night2))
+        }.map { it.name }
     }
 }
