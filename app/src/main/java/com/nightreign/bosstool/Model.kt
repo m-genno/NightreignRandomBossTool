@@ -1,14 +1,7 @@
 package com.nightreign.bosstool
 
-/** 検索対象になるボス。reading は検索用の「よみがな」。 */
+/** 検索対象になる夜ボス。reading は検索用の「よみがな」。 */
 data class Boss(val name: String, val reading: String)
-
-/** 3日目のボス（夜の王）と、その日に出やすい夜ボスの集合。 */
-data class Nightlord(
-    val name: String,
-    val night1: Set<String>,
-    val night2: Set<String>,
-)
 
 /**
  * 検索用に文字列を正規化する。

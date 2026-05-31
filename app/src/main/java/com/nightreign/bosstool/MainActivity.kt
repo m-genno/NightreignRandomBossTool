@@ -101,7 +101,7 @@ fun MainScreen() {
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("サンプルデータに戻す") },
+                            text = { Text("初期データに戻す") },
                             onClick = {
                                 BossRepository.restoreDefaults(context)
                                 dataVersion++
@@ -254,7 +254,7 @@ private fun ResultSection(
 
         candidates.isEmpty() -> {
             Text(
-                "該当する候補が見つかりませんでした。データ（nightlords.txt）を確認してください。",
+                "該当する候補が見つかりませんでした。データ（boss_table.txt）を確認してください。",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
             )
