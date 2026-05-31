@@ -10,16 +10,24 @@ const state = {
     day2: null,          // 選択された2日目の夜ボス名
 };
 
-// ====== 検索用の正規化（カタカナ→ひらがな・小文字化） ======
+// ====== 検索用の正規化（カタカナ→ひらがな・小書き→大書き・小文字化） ======
+// 「ぃ」「ィ」を「い」と同一視するため、小書き文字を通常文字に畳む。
+const SMALL_KANA_FOLD = {
+    "ぁ": "あ", "ぃ": "い", "ぅ": "う", "ぇ": "え", "ぉ": "お",
+    "っ": "つ", "ゃ": "や", "ゅ": "ゆ", "ょ": "よ", "ゎ": "わ",
+    "ゕ": "か", "ゖ": "け",
+};
+
 function normalize(s) {
     let out = "";
     for (const ch of s) {
+        let c = ch;
         const code = ch.codePointAt(0);
         if (code >= 0x30a1 && code <= 0x30f6) {
-            out += String.fromCodePoint(code - 0x60); // カタカナ→ひらがな
-        } else {
-            out += ch;
+            c = String.fromCodePoint(code - 0x60); // カタカナ→ひらがな
         }
+        if (SMALL_KANA_FOLD[c]) c = SMALL_KANA_FOLD[c]; // 小書き→通常
+        out += c;
     }
     return out.toLowerCase();
 }
