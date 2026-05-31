@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Compose 描画前のウィンドウ用テーマ（暗い背景にして白い点滅を防ぐ） -->
+    <style name="Theme.NightreignBossTool" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/window_bg</item>
+        <item name="android:statusBarColor">@color/window_bg</item>
+        <item name="android:navigationBarColor">@color/window_bg</item>
+    </style>
+</resources>
