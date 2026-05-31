@@ -76,6 +76,41 @@ ELDEN RING NIGHTREIGN で、3日目のボス（夜の王）が分からないと
 
 > データ出典: [JBJBGAME](https://jbjbgame.com/post-28051/)
 
+## Web版（フロントエンドのみ）
+
+`docs/` に、同じ仕様の静的Webアプリ（HTML/CSS/JavaScript）が入っています。
+サーバー不要で、ブラウザだけで動きます。
+
+- `docs/index.html` … 画面
+- `docs/app.js` … ロジック（読み検索・絞り込み）
+- `docs/style.css` … スタイル
+- `docs/data/bosses.txt`, `docs/data/nightlords.txt` … データ（形式はAndroid版と同じ）
+
+> データはAndroid版（`app/src/main/assets/`）と同じ内容のコピーです。
+> 更新時は両方を合わせてください。
+
+### ローカルで試す
+
+`file://` で直接開くと `fetch` がブロックされるため、簡易サーバー経由で開きます。
+
+```
+cd docs
+python -m http.server 8000
+# ブラウザで http://localhost:8000 を開く
+```
+
+### 無料で公開する（GitHub Pages）
+
+このリポジトリだけで無料公開できます。**1回だけ**以下を設定してください。
+
+1. GitHub のリポジトリ → **Settings** → 左メニュー **Pages**
+2. **Build and deployment** → **Source** = `Deploy from a branch`
+3. **Branch** = `main`、フォルダ = `/docs` を選び **Save**
+4. 数十秒〜数分後、ページ上部に公開URLが出ます
+   （このリポジトリなら `https://m-genno.github.io/NightreignRandomBossTool/`）
+
+以降は `git push` するたびに自動で再公開されます。
+
 ## ライセンス / 注意
 
 ELDEN RING NIGHTREIGN は FromSoftware / Bandai Namco の作品です。

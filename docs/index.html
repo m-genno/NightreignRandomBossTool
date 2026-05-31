@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <title>Nightreign 3日目ボス候補</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <header>
+        <h1>Nightreign 3日目ボス候補</h1>
+        <button id="reloadBtn" type="button" title="データを再読み込み" aria-label="再読み込み">↻</button>
+    </header>
+
+    <main>
+        <p class="desc">
+            夜ボスを選ぶと3日目のボス候補が表示されます。
+            1日目・2日目の両方を入力すると候補が絞り込まれます。
+        </p>
+
+        <div class="field">
+            <label for="day1Input">1日目の夜ボス</label>
+            <div class="combo" data-day="1">
+                <input id="day1Input" type="text" autocomplete="off"
+                       placeholder="名前や読みで検索（例：す → 鈴玉狩り）" />
+                <button class="clear" type="button" aria-label="クリア" hidden>×</button>
+                <ul class="suggestions" hidden></ul>
+            </div>
+        </div>
+
+        <div class="field">
+            <label for="day2Input">2日目の夜ボス</label>
+            <div class="combo" data-day="2">
+                <input id="day2Input" type="text" autocomplete="off"
+                       placeholder="名前や読みで検索" />
+                <button class="clear" type="button" aria-label="クリア" hidden>×</button>
+                <ul class="suggestions" hidden></ul>
+            </div>
+        </div>
+
+        <button id="resetBtn" type="button" class="reset">リセット</button>
+
+        <hr />
+
+        <section id="results" aria-live="polite"></section>
+    </main>
+
+    <footer>
+        <span>データ出典:
+            <a href="https://jbjbgame.com/post-28051/" target="_blank" rel="noopener">JBJBGAME</a>
+        </span>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
